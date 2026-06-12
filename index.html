@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>СтикерБот</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root {
+  --red: #c20024; --red-s: #fdecef; --red-l: #d8a3ad;
+  --bg: #f2f2f7; --card: #fff; --text: #1a1a1a; --muted: #8e8e93;
+  --sep: #e5e5ea; --inp: #fff;
+  --tab-h: 56px; --hdr-h: 52px;
+  --sb: env(safe-area-inset-bottom, 0px);
+}
+body.dark {
+  --bg: #1c1c1e; --card: #2c2c2e; --text: #f2f2f2; --muted: #8e8e93;
+  --sep: #3a3a3c; --inp: #3a3a3c; --red-s: #3a1620;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
+
+/* ─── SHELL ─── */
+.app { display: flex; flex-direction: column; height: 100vh; }
+
+/* ─── HEADER ─── */
+.hdr {
+  height: var(--hdr-h); background: var(--red); flex-shrink: 0;
+  display: flex; align-items: center; padding: 0 16px; position: relative;
+}
+.hdr-back {
+  position: absolute; left: 8px; background: none; border: none;
+  color: #fff; font-size: 15px; padding: 10px; cursor: pointer;
+  display: none; align-items: center; gap: 2px; opacity: .9;
+}
+.hdr-back.on { display: flex; }
+.hdr-title { flex: 1; text-align: center; font-size: 17px; font-weight: 600; color: #fff; }
+.hdr-q {
+  position: absolute; right: 14px;
+  background: rgba(255,255,255,.18); border-radius: 10px;
+  padding: 3px 9px; font-size: 12px; color: #fff; font-weight: 500;
+  display: none;
+}
+.hdr-q.on { display: block; }
+
+/* ─── SCREENS ─── */
+.screens { flex: 1; overflow: hidden; position: relative; }
+.scr {
+  position: absolute; inset: 0;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding-bottom: 16px;
+  transform: translateX(100%);
+  transition: transform .26s cubic-bezier(.4,0,.2,1);
+  visibility: hidden;
+  will-change: transform;
+}
+.scr.active { transform: translateX(0); visibility: visible; }
+.scr.left   { transform: translateX(-30%); visibility: hidden; }
+
+/* ─── TABS ─── */
+.tabs {
+  height: calc(var(--tab-h) + var(--sb)); padding-bottom: var(--sb);
+  background: var(--card); border-top: 1px solid var(--sep);
+  display: flex; flex-shrink: 0;
+}
+.t-btn {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 3px;
+  background: none; border: none; cursor: pointer; position: relative;
+}
+.t-ic { font-size: 22px; line-height: 1; }
+.t-lb { font-size: 10px; font-weight: 500; color: var(--muted); }
+.t-btn.on .t-lb { color: var(--red); }
+.t-dot {
+  position: absolute; top: 6px; right: calc(50% - 16px);
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--red); display: none;
+  border: 2px solid var(--card);
+}
+.t-dot.on { display: block; }
+
+/* ─── SHARED COMPONENTS ─── */
+.grp { margin: 12px 16px 0; background: var(--card); border-radius: 14px; overflow: hidden; }
+.row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 16px; border-bottom: 1px solid var(--sep);
+  cursor: pointer; transition: background .1s;
+}
+.row:last-child { border-bottom: none; }
+.row:active { background: var(--bg); }
+.r-ic { font-size: 22px; width: 28px; text-align: center; flex-shrink: 0; }
+.r-bd { flex: 1; min-width: 0; }
+.r-t  { font-size: 15px; font-weight: 500; }
+.r-s  { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.r-arr{ color: var(--muted); font-size: 18px; opacity: .45; }
+
+.lbl { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; padding: 16px 16px 4px; }
+
+/* ─── HOME ─── */
+.stk-card {
+  margin: 12px 16px 0; background: var(--card); border-radius: 16px;
+  padding: 14px 16px; display: flex; align-items: center; gap: 14px;
+  cursor: pointer;
+}
+.stk-card:active { opacity: .85; }
+.stk-ic {
+  width: 50px; height: 50px; border-radius: 12px;
+  background: var(--red-s); border: 1.5px solid var(--red-l);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; flex-shrink: 0;
+}
+.stk-name { font-size: 15px; font-weight: 600; }
+.stk-hint { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.stk-dot { width: 8px; height: 8px; border-radius: 50%; background: #34c759; margin-left: auto; flex-shrink: 0; }
+
+.q-row {
+  margin: 10px 16px 0; background: var(--card); border-radius: 14px;
+  padding: 13px 16px; display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer;
+}
+.q-row:active { opacity: .85; }
+.q-lbl { font-size: 14px; color: var(--muted); }
+.q-val { font-size: 14px; font-weight: 600; color: var(--red); }
+
+.big {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  background: var(--red); color: #fff; border: none; border-radius: 14px;
+  padding: 15px 16px; margin: 12px 16px 0; width: calc(100% - 32px);
+  font-size: 16px; font-weight: 600; cursor: pointer; transition: opacity .1s;
+}
+.big:active { opacity: .82; }
+
+/* ─── STICKERS ─── */
+.packs-grid {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 10px; padding: 12px 16px 0;
+}
+.pk {
+  border: 1.5px solid var(--sep); border-radius: 14px;
+  padding: 14px 6px 10px; text-align: center;
+  cursor: pointer; transition: .12s; background: var(--card);
+}
+.pk:active { transform: scale(.95); }
+.pk.on { border-color: var(--red); background: var(--red-s); }
+.pk.add { border-style: dashed; border-color: var(--red-l); }
+.pk-ic { font-size: 28px; display: block; }
+.pk-nm { font-size: 12px; color: var(--muted); margin-top: 6px; display: block; }
+.pk.on .pk-nm { color: var(--red); font-weight: 600; }
+.pk.add .pk-nm { color: var(--red); }
+
+.pk-info {
+  margin: 12px 16px 0; background: var(--card); border-radius: 14px;
+  padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+}
+.pk-info-ic { font-size: 28px; }
+.pk-info-nm { font-size: 15px; font-weight: 600; }
+.pk-info-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+/* ─── SEARCH ─── */
+.inp-wrap { padding: 14px 16px 0; }
+.inp {
+  width: 100%; border: 1.5px solid var(--sep); background: var(--inp);
+  color: var(--text); border-radius: 12px; padding: 12px 14px;
+  font-size: 15px; outline: none; transition: border-color .15s;
+  display: block;
+}
+.inp:focus { border-color: var(--red); }
+.cc-row {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 10px; padding: 12px 14px;
+  background: var(--card); border-radius: 12px; cursor: pointer;
+}
+.cc-row input { width: 18px; height: 18px; accent-color: var(--red); cursor: pointer; }
+.cc-txt { font-size: 14px; }
+
+/* ─── LINK ─── */
+.link-hints { margin: 10px 16px 0; background: var(--card); border-radius: 12px; overflow: hidden; }
+.lh-row { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--sep); font-size: 13px; color: var(--muted); }
+.lh-row:last-child { border-bottom: none; }
+
+/* ─── YOUTUBE ─── */
+.yt-banner {
+  margin: 12px 16px 0; border-radius: 14px; padding: 14px 16px;
+  display: flex; align-items: center; gap: 10px;
+}
+.yt-banner.off { background: var(--red-s); }
+.yt-banner.on  { background: #e8f5e9; }
+body.dark .yt-banner.on { background: #1b3a22; }
+.yt-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.yt-banner.off .yt-dot { background: var(--red); }
+.yt-banner.on  .yt-dot { background: #34c759; }
+.yt-txt { font-size: 14px; font-weight: 500; }
+.yt-banner.off .yt-txt { color: var(--red); }
+.yt-banner.on  .yt-txt { color: #2e7d32; }
+body.dark .yt-banner.on .yt-txt { color: #81c784; }
+
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 16px; margin-top: 12px; }
+.stat { background: var(--card); border-radius: 14px; padding: 14px; }
+.stat-v { font-size: 22px; font-weight: 700; color: var(--red); }
+.stat-l { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+/* ─── TOAST ─── */
+.toast {
+  position: fixed; left: 50%;
+  bottom: calc(var(--tab-h) + var(--sb) + 12px);
+  transform: translateX(-50%) translateY(10px);
+  background: rgba(0,0,0,.8); color: #fff;
+  padding: 10px 18px; border-radius: 22px;
+  font-size: 14px; font-weight: 500; white-space: nowrap;
+  opacity: 0; pointer-events: none; z-index: 999;
+  transition: opacity .2s, transform .2s;
+}
+.toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+
+<body>
+<div class="app">
+
+<!-- HEADER -->
+<div class="hdr">
+  <button class="hdr-back" id="backBtn" onclick="goBack()">‹ Назад</button>
+  <div class="hdr-title" id="hdrTitle">СтикерБот</div>
+  <div class="hdr-q" id="hdrQ"></div>
+</div>
+
+<!-- SCREENS -->
+<div class="screens">
+
+  <!-- HOME -->
+  <div class="scr active" id="s-home">
+    <div class="stk-card" onclick="switchTab('stickers')">
+      <div class="stk-ic" id="hStkIc">⚽️</div>
+      <div>
+        <div class="stk-name" id="hStkNm">Pinco</div>
+        <div class="stk-hint">активный стикер · изменить</div>
+      </div>
+      <div class="stk-dot"></div>
+    </div>
+
+    <div class="q-row" onclick="sendAct({action:'status'})">
+      <span class="q-lbl">Очередь</span>
+      <span class="q-val" id="qVal">готов</span>
+    </div>
+
+    <button class="big" onclick="sendAct({action:'send_video'})">🎬 Прислать ролик</button>
+
+    <div class="lbl">Действия</div>
+    <div class="grp">
+      <div class="row" onclick="sendAct({action:'slice'})">
+        <div class="r-ic">✂️</div>
+        <div class="r-bd"><div class="r-t">Нарезать матч</div></div>
+        <div class="r-arr">›</div>
+      </div>
+      <div class="row" onclick="openScr('s-search','Поиск YouTube')">
+        <div class="r-ic">🔍</div>
+        <div class="r-bd"><div class="r-t">Найти на YouTube</div></div>
+        <div class="r-arr">›</div>
+      </div>
+      <div class="row" onclick="openScr('s-link','Скачать по ссылке')">
+        <div class="r-ic">🔗</div>
+        <div class="r-bd"><div class="r-t">Скачать по ссылке</div></div>
+        <div class="r-arr">›</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STICKERS -->
+  <div class="scr" id="s-stickers">
+    <div class="packs-grid">
+      <div class="pk on" data-id="pinco" onclick="pickPack(this)">
+        <span class="pk-ic">⚽️</span><span class="pk-nm">Pinco</span>
+      </div>
+      <div class="pk" data-id="pinco2" onclick="pickPack(this)">
+        <span class="pk-ic">🖼</span><span class="pk-nm">Pinco 2</span>
+      </div>
+      <div class="pk add" data-id="upload" onclick="sendAct({action:'sticker',id:'upload'})">
+        <span class="pk-ic">＋</span><span class="pk-nm">Загрузить</span>
+      </div>
+    </div>
+    <div class="pk-info" id="pkInfo">
+      <div class="pk-info-ic" id="pkInfoIc">⚽️</div>
+      <div>
+        <div class="pk-info-nm" id="pkInfoNm">Pinco</div>
+        <div class="pk-info-sub">Нажмите «Применить»</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIDEO -->
+  <div class="scr" id="s-video">
+    <div class="lbl">Обработка</div>
+    <div class="grp">
+      <div class="row" onclick="sendAct({action:'send_video'})">
+        <div class="r-ic">📤</div>
+        <div class="r-bd"><div class="r-t">Прислать ролик</div><div class="r-s">поставлю стикер</div></div>
+        <div class="r-arr">›</div>
+      </div>
+      <div class="row" onclick="sendAct({action:'slice'})">
+        <div class="r-ic">✂️</div>
+        <div class="r-bd"><div class="r-t">Нарезать матч</div><div class="r-s">длинное видео → клипы 15–25 сек</div></div>
+        <div class="r-arr">›</div>
+      </div>
+    </div>
+
+    <div class="lbl">Скачать</div>
+    <div class="grp">
+      <div class="row" onclick="openScr('s-search','Поиск YouTube')">
+        <div class="r-ic">🔍</div>
+        <div class="r-bd"><div class="r-t">Поиск YouTube</div><div class="r-s">топ или Creative Commons</div></div>
+        <div class="r-arr">›</div>
+      </div>
+      <div class="row" onclick="openScr('s-link','Скачать по ссылке')">
+        <div class="r-ic">🔗</div>
+        <div class="r-bd"><div class="r-t">По ссылке</div><div class="r-s">YouTube CC · Drive · прямая</div></div>
+        <div class="r-arr">›</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEARCH (nested) -->
+  <div class="scr" id="s-search">
+    <div class="inp-wrap">
+      <input class="inp" id="qInp" type="text" placeholder="Запрос на YouTube…"
+        enterkeyhint="search" autocomplete="off"
+        onkeydown="if(event.key==='Enter')doSearch()">
+      <label class="cc-row">
+        <input type="checkbox" id="ccChk">
+        <span class="cc-txt">🟢 Только Creative Commons</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- LINK (nested) -->
+  <div class="scr" id="s-link">
+    <div class="inp-wrap">
+      <input class="inp" id="urlInp" type="url" placeholder="https://…"
+        enterkeyhint="go" autocomplete="off"
+        onkeydown="if(event.key==='Enter')doLink()">
+    </div>
+    <div class="link-hints">
+      <div class="lh-row">▶️ YouTube — только Creative Commons</div>
+      <div class="lh-row">📁 Google Drive — прямая ссылка на файл</div>
+      <div class="lh-row">🌐 Прямая MP4-ссылка</div>
+    </div>
+  </div>
+
+</div><!-- /screens -->
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="t-btn on" id="tb-home" onclick="switchTab('home')">
+    <div class="t-ic">🏠</div><div class="t-lb">Главная</div>
+  </button>
+  <button class="t-btn" id="tb-stickers" onclick="switchTab('stickers')">
+    <div class="t-ic">🎨<div class="t-dot" id="stkDot"></div></div>
+    <div class="t-lb">Стикеры</div>
+  </button>
+  <button class="t-btn" id="tb-video" onclick="switchTab('video')">
+    <div class="t-ic">🎬</div><div class="t-lb">Видео</div>
+  </button>
+</div>
+
+</div><!-- /app -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+const tg = window.Telegram.WebApp;
+tg.ready(); tg.expand();
+
+// Theme
+const applyTheme = () => document.body.classList.toggle("dark", tg.colorScheme === "dark");
+applyTheme(); tg.onEvent("themeChanged", applyTheme);
+
+// State
+const PACKS = { pinco: {ic:"⚽️", nm:"Pinco"}, pinco2: {ic:"🖼", nm:"Pinco 2"} };
+let selPack = localStorage.getItem("pack") || "pinco";
+let curTab = "home";
+let curScr = "s-home";
+let stack = [];
+
+const TITLES = { "s-home":"СтикерБот", "s-stickers":"Стикеры", "s-video":"Видео" };
+
+// Queue from start_param
+const sp = tg.initDataUnsafe?.start_param;
+if (sp) document.getElementById("qVal").textContent = sp;
+
+// ─── INIT ───
+function init() {
+  updatePackUI();
+  updateHomeSticker();
+  updateMainBtn();
+}
+
+// ─── PACK ───
+function pickPack(el) {
+  if (!el.dataset.id || el.classList.contains("add")) return;
+  document.querySelectorAll(".pk[data-id]").forEach(p => p.classList.remove("on"));
+  el.classList.add("on");
+  selPack = el.dataset.id;
+  updatePackUI();
+  document.getElementById("stkDot").classList.add("on");
+  try { tg.HapticFeedback.impactOccurred("light"); } catch(e) {}
+}
+
+function updatePackUI() {
+  const p = PACKS[selPack] || {};
+  document.getElementById("pkInfoIc").textContent = p.ic || "⚽️";
+  document.getElementById("pkInfoNm").textContent = p.nm || selPack;
+}
+
+function updateHomeSticker() {
+  const p = PACKS[selPack] || {};
+  document.getElementById("hStkIc").textContent = p.ic || "⚽️";
+  document.getElementById("hStkNm").textContent = p.nm || selPack;
+}
+
+function applyPack() {
+  localStorage.setItem("pack", selPack);
+  document.getElementById("stkDot").classList.remove("on");
+  updateHomeSticker();
+  sendAct({ action:"sticker", id: selPack });
+}
+
+// ─── NAVIGATION ───
+function switchTab(tab) {
+  stack = [];
+  document.getElementById("backBtn").classList.remove("on");
+
+  curTab = tab; curScr = "s-" + tab;
+
+  document.querySelectorAll(".scr").forEach(s => s.classList.remove("active","left"));
+  document.querySelectorAll(".t-btn").forEach(b => b.classList.remove("on"));
+
+  document.getElementById("s-" + tab).classList.add("active");
+  document.getElementById("tb-" + tab).classList.add("on");
+  document.getElementById("hdrTitle").textContent = TITLES[curScr] || "СтикерБот";
+
+  const q = document.getElementById("hdrQ");
+  q.classList.remove("on");
+
+  updateMainBtn();
+}
+
+function openScr(id, title) {
+  document.getElementById(curScr).classList.remove("active");
+  document.getElementById(curScr).classList.add("left");
+  stack.push(curScr); curScr = id;
+  document.getElementById(id).classList.add("active");
+  document.getElementById("hdrTitle").textContent = title;
+  document.getElementById("backBtn").classList.add("on");
+  setTimeout(() => {
+    const el = document.querySelector("#" + id + " .inp");
+    if (el) { el.focus(); }
+  }, 270);
+  updateMainBtn();
+}
+
+function goBack() {
+  if (!stack.length) return;
+  document.getElementById(curScr).classList.remove("active");
+  const prev = stack.pop();
+  curScr = prev;
+  document.getElementById(prev).classList.remove("left");
+  document.getElementById(prev).classList.add("active");
+  if (!stack.length) {
+    document.getElementById("backBtn").classList.remove("on");
+    document.getElementById("hdrTitle").textContent = TITLES[prev] || "СтикерБот";
+  }
+  updateMainBtn();
+}
+
+// ─── MAIN BUTTON ───
+// Один постоянный обработчик: действие выбирается по текущему экрану.
+// (несколько onClick подряд накапливаются в Telegram и срабатывают все разом)
+function mainBtnClick() {
+  if (curScr === "s-stickers")      applyPack();
+  else if (curScr === "s-search")   doSearch();
+  else if (curScr === "s-link")     doLink();
+  else                              sendAct({ action: "send_video" });
+}
+tg.MainButton.onClick(mainBtnClick);
+
+function updateMainBtn() {
+  const mb = tg.MainButton;
+  if (curScr === "s-stickers")    mb.setText("Применить стикер").show();
+  else if (curScr === "s-search") mb.setText("Найти").show();
+  else if (curScr === "s-link")   mb.setText("Загрузить").show();
+  else if (curScr === "s-home" || curScr === "s-video")
+                                  mb.setText("Прислать ролик").show();
+  else mb.hide();
+}
+
+// ─── ACTIONS ───
+function sendAct(payload) {
+  try { tg.HapticFeedback.impactOccurred("medium"); } catch(e) {}
+  tg.sendData(JSON.stringify({ ...payload, sticker: selPack }));
+}
+
+function doSearch() {
+  const q = document.getElementById("qInp").value.trim();
+  if (!q) { tg.showAlert("Введите запрос"); return; }
+  sendAct({ action:"search", query:q, cc: document.getElementById("ccChk").checked });
+}
+
+function doLink() {
+  const u = document.getElementById("urlInp").value.trim();
+  if (!/^https?:\/\//i.test(u)) { tg.showAlert("Введите ссылку https://…"); return; }
+  sendAct({ action:"link", url:u });
+}
+
+// ─── TOAST ───
+let _tt;
+function toast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg; el.classList.add("on");
+  clearTimeout(_tt); _tt = setTimeout(() => el.classList.remove("on"), 2400);
+}
+
+init();
+</script>
+</body>
+</html>
