@@ -326,6 +326,15 @@ body.dark .yt-banner.on .yt-txt { color: #81c784; }
         <div class="r-arr">›</div>
       </div>
     </div>
+
+    <div class="lbl">Публикация</div>
+    <div class="grp">
+      <div class="row" onclick="openScr('s-publish','Публикация')">
+        <div class="r-ic">🚀</div>
+        <div class="r-bd"><div class="r-t">Куда публиковать</div><div class="r-s">YouTube Shorts · Telegram-канал</div></div>
+        <div class="r-arr">›</div>
+      </div>
+    </div>
   </div>
 
   <!-- SEARCH (nested) -->
@@ -352,6 +361,32 @@ body.dark .yt-banner.on .yt-txt { color: #81c784; }
       <div class="lh-row">▶️ YouTube — только Creative Commons</div>
       <div class="lh-row">📁 Google Drive — прямая ссылка на файл</div>
       <div class="lh-row">🌐 Прямая MP4-ссылка</div>
+    </div>
+  </div>
+
+  <!-- PUBLISH (nested) -->
+  <div class="scr" id="s-publish">
+    <div class="yt-banner off" onclick="sendAct({action:'yt_connect'})">
+      <div class="yt-dot"></div>
+      <div class="yt-txt">Нажмите, чтобы проверить YouTube активного бренда</div>
+    </div>
+    <div class="lbl">Каналы публикации</div>
+    <div class="grp">
+      <div class="row" onclick="sendAct({action:'yt_connect'})">
+        <div class="r-ic">▶️</div>
+        <div class="r-bd"><div class="r-t">Подключить YouTube</div><div class="r-s">OAuth, по разу на бренд</div></div>
+        <div class="r-arr">›</div>
+      </div>
+      <div class="row" onclick="sendAct({action:'stats'})">
+        <div class="r-ic">📈</div>
+        <div class="r-bd"><div class="r-t">Статистика</div><div class="r-s">просмотры за 7 дней</div></div>
+        <div class="r-arr">›</div>
+      </div>
+    </div>
+    <div class="link-hints">
+      <div class="lh-row">🚀 Кнопки публикации появляются под готовым клипом</div>
+      <div class="lh-row">📤 YouTube Shorts — авто-расписание на пиковое время</div>
+      <div class="lh-row">📣 Telegram-канал — мгновенно (бот должен быть админом)</div>
     </div>
   </div>
 
