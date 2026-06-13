@@ -211,6 +211,11 @@ body.dark .yt-banner.on .yt-txt { color: #81c784; }
   transition: opacity .2s, transform .2s;
 }
 .toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ─── RECIPE TOGGLES ─── */
+.rcp .r-box { width: 26px; text-align: center; font-size: 18px; color: var(--muted); }
+.rcp.on .r-box { color: var(--red); }
+.rcp.on .r-t { color: var(--red); font-weight: 600; }
 </style>
 </head>
 
@@ -298,22 +303,17 @@ body.dark .yt-banner.on .yt-txt { color: #81c784; }
     <div class="grp">
       <div class="row" onclick="sendAct({action:'send_video'})">
         <div class="r-ic">📤</div>
-        <div class="r-bd"><div class="r-t">Прислать ролик</div><div class="r-s">поставлю стикер</div></div>
+        <div class="r-bd"><div class="r-t">Прислать ролик</div><div class="r-s">обработаю по настройкам ниже</div></div>
+        <div class="r-arr">›</div>
+      </div>
+      <div class="row" onclick="openScr('s-recipe','Настройки обработки')">
+        <div class="r-ic">⚙️</div>
+        <div class="r-bd"><div class="r-t">Настройки обработки</div><div class="r-s">музыка, свет, эффекты, субтитры</div></div>
         <div class="r-arr">›</div>
       </div>
       <div class="row" onclick="sendAct({action:'slice'})">
         <div class="r-ic">✂️</div>
         <div class="r-bd"><div class="r-t">Нарезать матч</div><div class="r-s">длинное видео → клипы 15–25 сек</div></div>
-        <div class="r-arr">›</div>
-      </div>
-      <div class="row" onclick="sendAct({action:'enhance'})">
-        <div class="r-ic">✨</div>
-        <div class="r-bd"><div class="r-t">Эффекты + бразильский фонк</div><div class="r-s">световые переходы и музыка 130 BPM</div></div>
-        <div class="r-arr">›</div>
-      </div>
-      <div class="row" onclick="sendAct({action:'subtitles'})">
-        <div class="r-ic">📝</div>
-        <div class="r-bd"><div class="r-t">Авто-субтитры</div><div class="r-s">распознаю речь и вшью в кадр</div></div>
         <div class="r-arr">›</div>
       </div>
       <div class="row" onclick="sendAct({action:'export'})">
@@ -398,6 +398,28 @@ body.dark .yt-banner.on .yt-txt { color: #81c784; }
       <div class="lh-row">📤 YouTube Shorts — авто-расписание на пиковое время</div>
       <div class="lh-row">📣 Telegram-канал — мгновенно (бот должен быть админом)</div>
     </div>
+  </div>
+
+  <!-- RECIPE (nested) -->
+  <div class="scr" id="s-recipe">
+    <p class="hint" style="margin:14px 16px 0;text-align:left">
+      Отметьте, что добавлять к каждому ролику, и нажмите «Сохранить».
+      Стикер ставится всегда (выбрать — на вкладке «Стикеры»).</p>
+    <div class="grp" style="margin-top:10px">
+      <div class="row rcp" data-opt="music" onclick="toggleRcp(this)">
+        <div class="r-ic">🎵</div><div class="r-bd"><div class="r-t">Музыка (фонк)</div>
+          <div class="r-s">бразильский фонк 130 BPM</div></div><div class="r-box">▢</div></div>
+      <div class="row rcp" data-opt="light" onclick="toggleRcp(this)">
+        <div class="r-ic">💡</div><div class="r-bd"><div class="r-t">Световые эффекты</div>
+          <div class="r-s">вспышки на смене сцен</div></div><div class="r-box">▢</div></div>
+      <div class="row rcp" data-opt="sfx" onclick="toggleRcp(this)">
+        <div class="r-ic">🔊</div><div class="r-bd"><div class="r-t">Звуковые эффекты</div>
+          <div class="r-s">whoosh/удары на моментах</div></div><div class="r-box">▢</div></div>
+      <div class="row rcp" data-opt="subs" onclick="toggleRcp(this)">
+        <div class="r-ic">📝</div><div class="r-bd"><div class="r-t">Субтитры</div>
+          <div class="r-s">распознаю речь и вшью в кадр</div></div><div class="r-box">▢</div></div>
+    </div>
+    <button class="big" onclick="saveRecipe()">💾 Сохранить настройки</button>
   </div>
 
 </div><!-- /screens -->
@@ -565,6 +587,27 @@ function doLink() {
   sendAct({ action:"link", url:u });
 }
 
+// ─── RECIPE (настройки обработки) ───
+let recipe = JSON.parse(localStorage.getItem("recipe") || '{"music":false,"light":false,"sfx":false,"subs":false}');
+function renderRecipe() {
+  document.querySelectorAll("#s-recipe .rcp").forEach(el => {
+    const on = !!recipe[el.dataset.opt];
+    el.classList.toggle("on", on);
+    el.querySelector(".r-box").textContent = on ? "✅" : "▢";
+  });
+}
+function toggleRcp(el) {
+  const k = el.dataset.opt;
+  recipe[k] = !recipe[k];
+  try { tg.HapticFeedback.selectionChanged(); } catch(e) {}
+  renderRecipe();
+}
+function saveRecipe() {
+  localStorage.setItem("recipe", JSON.stringify(recipe));
+  sendAct({ action:"recipe", music:!!recipe.music, light:!!recipe.light,
+            sfx:!!recipe.sfx, subs:!!recipe.subs });
+}
+
 // ─── TOAST ───
 let _tt;
 function toast(msg) {
@@ -574,6 +617,7 @@ function toast(msg) {
 }
 
 init();
+renderRecipe();
 </script>
 </body>
 </html>
