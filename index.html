@@ -303,12 +303,7 @@ body.dark .yt-banner.on .yt-txt { color: #81c784; }
     <div class="grp">
       <div class="row" onclick="sendAct({action:'send_video'})">
         <div class="r-ic">📤</div>
-        <div class="r-bd"><div class="r-t">Прислать ролик</div><div class="r-s">обработаю по настройкам ниже</div></div>
-        <div class="r-arr">›</div>
-      </div>
-      <div class="row" onclick="openScr('s-recipe','Настройки обработки')">
-        <div class="r-ic">⚙️</div>
-        <div class="r-bd"><div class="r-t">Настройки обработки</div><div class="r-s">музыка, свет, эффекты, субтитры</div></div>
+        <div class="r-bd"><div class="r-t">Прислать ролик</div><div class="r-s">по настройкам из вкладки «Эффекты»</div></div>
         <div class="r-arr">›</div>
       </div>
       <div class="row" onclick="sendAct({action:'slice'})">
@@ -436,6 +431,9 @@ body.dark .yt-banner.on .yt-txt { color: #81c784; }
   <button class="t-btn" id="tb-video" onclick="switchTab('video')">
     <div class="t-ic">🎬</div><div class="t-lb">Видео</div>
   </button>
+  <button class="t-btn" id="tb-recipe" onclick="switchTab('recipe')">
+    <div class="t-ic">✨</div><div class="t-lb">Эффекты</div>
+  </button>
 </div>
 
 </div><!-- /app -->
@@ -457,7 +455,7 @@ let curTab = "home";
 let curScr = "s-home";
 let stack = [];
 
-const TITLES = { "s-home":"СтикерБот", "s-stickers":"Стикеры", "s-video":"Видео" };
+const TITLES = { "s-home":"СтикерБот", "s-stickers":"Стикеры", "s-video":"Видео", "s-recipe":"Эффекты" };
 
 // Queue from start_param
 const sp = tg.initDataUnsafe?.start_param;
